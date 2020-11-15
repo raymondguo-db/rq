@@ -45,7 +45,7 @@ def truncate_long_string(data, maxlen=75):
     """ Truncates strings longer than maxlen
     """
     return (data[:maxlen] + '...') if len(data) > maxlen else data
-
+	
 def cancel_job(job_id, connection=None):
     """Cancels the job with the given job ID, preventing execution.  Discards
     any job info (i.e. it can't be requeued later).
@@ -345,7 +345,7 @@ class Job(object):
         self.ttl = None
         self.worker_name = None
         self._status = None
-        self._dependency_ids = []
+        self._dependency_ids = []        
         self.meta = {}
         self.serializer = resolve_serializer(serializer)
         self.retries_left = None
@@ -772,7 +772,7 @@ class Job(object):
         from .registry import FailedJobRegistry
         return FailedJobRegistry(self.origin, connection=self.connection,
                                  job_class=self.__class__)
-
+    
     def get_retry_interval(self):
         """Returns the desired retry interval.
         If number of retries is bigger than length of intervals, the first
@@ -859,7 +859,7 @@ class Retry(object):
         super().__init__()
         if max < 1:
             raise ValueError('max: please enter a value greater than 0')
-
+        
         if isinstance(interval, int):
             if interval < 0:
                 raise ValueError('interval: negative numbers are not allowed')
@@ -869,6 +869,6 @@ class Retry(object):
                 if i < 0:
                     raise ValueError('interval: negative numbers are not allowed')
             intervals = interval
-
+        
         self.max = max
         self.intervals = intervals
