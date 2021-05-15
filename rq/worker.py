@@ -13,7 +13,7 @@ import time
 import traceback
 import warnings
 
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from distutils.version import StrictVersion
 from uuid import uuid4
 
@@ -294,7 +294,7 @@ class Worker(object):
             now_in_string = utcformat(now)
             self.birth_date = now
 
-            mapping={
+            mapping = {
                 'birth': now_in_string,
                 'last_heartbeat': now_in_string,
                 'queues': queues,
@@ -668,7 +668,7 @@ class Worker(object):
                 pass
             except redis.exceptions.ConnectionError as conn_err:
                 self.log.error('Could not connect to Redis instance: %s Retrying in %d seconds...',
-                                conn_err, connection_wait_time)
+                               conn_err, connection_wait_time)
                 time.sleep(connection_wait_time)
                 connection_wait_time *= self.exponential_backoff_factor
                 connection_wait_time = min(connection_wait_time, self.max_connection_wait_time)
@@ -755,7 +755,7 @@ class Worker(object):
         if child_pid == 0:
             os.setsid()
             self.main_work_horse(job, queue)
-            os._exit(0) # just in case
+            os._exit(0)  # just in case
         else:
             self._horse_pid = child_pid
             self.procline('Forked {0} at {1}'.format(child_pid, time.time()))
@@ -837,7 +837,7 @@ class Worker(object):
             self.handle_job_failure(
                 job, queue=queue,
                 exc_string="Work-horse was terminated unexpectedly "
-                        "(waitpid returned %s)" % ret_val
+                           "(waitpid returned %s)" % ret_val
             )
 
     def execute_job(self, job, queue):
@@ -946,14 +946,7 @@ class Worker(object):
                 )
 
             if retry:
-                retry_interval = job.get_retry_interval()
-                job.retries_left = job.retries_left - 1
-                if retry_interval:
-                    scheduled_datetime = datetime.now(timezone.utc) + timedelta(seconds=retry_interval)
-                    job.set_status(JobStatus.SCHEDULED)
-                    queue.schedule_job(job, scheduled_datetime, pipeline=pipeline)
-                else:
-                    queue.enqueue_job(job, pipeline=pipeline)
+                job.retry(queue, pipeline)
 
             try:
                 pipeline.execute()
