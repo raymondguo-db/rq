@@ -394,11 +394,11 @@ class Job(object):
             raise TypeError('id must be a string, not {0}'.format(type(value)))
         self._id = value
 
-    def heartbeat(self, heartbeat, ttl, pipeline=None):
+    def heartbeat(self, heartbeat, ttl, pipeline=None, xx=False):
         self.last_heartbeat = heartbeat
         connection = pipeline if pipeline is not None else self.connection
         connection.hset(self.key, 'last_heartbeat', utcformat(self.last_heartbeat))
-        self.started_job_registry.add(self, ttl, pipeline=pipeline)
+        self.started_job_registry.add(self, ttl, pipeline=pipeline, xx=xx)
 
     id = property(get_id, set_id)
 
