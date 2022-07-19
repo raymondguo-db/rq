@@ -82,7 +82,7 @@ class Job(object):
     def create(cls, func, args=None, kwargs=None, connection=None,
                result_ttl=None, ttl=None, status=None, description=None,
                depends_on=None, timeout=None, id=None, origin=None, meta=None,
-               failure_ttl=None, serializer=None):
+               failure_ttl=None, serializer=None, deferred_ttl=None):
         """Creates a new Job instance for the given function, arguments, and
         keyword arguments.
         """
@@ -124,6 +124,7 @@ class Job(object):
         job.description = description or job.get_call_string()
         job.result_ttl = parse_timeout(result_ttl)
         job.failure_ttl = parse_timeout(failure_ttl)
+        job.deferred_ttl = parse_timeout(deferred_ttl)
         job.ttl = parse_timeout(ttl)
         job.timeout = parse_timeout(timeout)
         job._status = status
@@ -351,6 +352,7 @@ class Job(object):
         self.timeout = None
         self.result_ttl = None
         self.failure_ttl = None
+        self.deferred_ttl = None
         self.ttl = None
         self.worker_name = None
         self._status = None
@@ -505,6 +507,7 @@ class Job(object):
         self.timeout = parse_timeout(obj.get('timeout')) if obj.get('timeout') else None
         self.result_ttl = int(obj.get('result_ttl')) if obj.get('result_ttl') else None  # noqa
         self.failure_ttl = int(obj.get('failure_ttl')) if obj.get('failure_ttl') else None  # noqa
+        self.deferred_ttl = int(obj.get('deferred_ttl')) if obj.get('deferred_ttl') else None  # noqa
         self._status = obj.get('status').decode() if obj.get('status') else None
 
         dep_ids = obj.get('dependency_ids')
@@ -579,6 +582,8 @@ class Job(object):
             obj['result_ttl'] = self.result_ttl
         if self.failure_ttl is not None:
             obj['failure_ttl'] = self.failure_ttl
+        if self.deferred_ttl is not None:
+            obj['deferred_ttl'] = self.deferred_ttl
         if self._status is not None:
             obj['status'] = self._status
         if self._dependency_ids:
@@ -835,7 +840,7 @@ class Job(object):
         registry = DeferredJobRegistry(self.origin,
                                        connection=self.connection,
                                        job_class=self.__class__)
-        registry.add(self, pipeline=pipeline)
+        registry.add(self, pipeline=pipeline, ttl=self.deferred_ttl)
 
         connection = pipeline if pipeline is not None else self.connection
 

@@ -280,7 +280,8 @@ class Queue(object):
     def create_job(self, func, args=None, kwargs=None, timeout=None,
                    result_ttl=None, ttl=None, failure_ttl=None,
                    description=None, depends_on=None, job_id=None,
-                   meta=None, status=JobStatus.QUEUED, retry=None):
+                   meta=None, status=JobStatus.QUEUED, retry=None,
+                   deferred_ttl=None):
         """Creates a job based on parameters given."""
         timeout = parse_timeout(timeout)
 
@@ -291,6 +292,7 @@ class Queue(object):
 
         result_ttl = parse_timeout(result_ttl)
         failure_ttl = parse_timeout(failure_ttl)
+        deferred_ttl = parse_timeout(deferred_ttl)
 
         ttl = parse_timeout(ttl)
         if ttl is not None and ttl <= 0:
@@ -301,7 +303,8 @@ class Queue(object):
             result_ttl=result_ttl, ttl=ttl, failure_ttl=failure_ttl,
             status=status, description=description,
             depends_on=depends_on, timeout=timeout, id=job_id,
-            origin=self.name, meta=meta, serializer=self.serializer
+            origin=self.name, meta=meta, serializer=self.serializer,
+            deferred_ttl=deferred_ttl
         )
 
         if retry:
@@ -313,7 +316,7 @@ class Queue(object):
     def enqueue_call(self, func, args=None, kwargs=None, timeout=None,
                      result_ttl=None, ttl=None, failure_ttl=None,
                      description=None, depends_on=None, job_id=None,
-                     at_front=False, meta=None, retry=None):
+                     at_front=False, meta=None, retry=None, deferred_ttl=None):
         """Creates a job to represent the delayed function call and enqueues
         it.
 nd
@@ -326,7 +329,7 @@ nd
             func, args=args, kwargs=kwargs, result_ttl=result_ttl, ttl=ttl,
             failure_ttl=failure_ttl, description=description, depends_on=depends_on,
             job_id=job_id, meta=meta, status=JobStatus.QUEUED, timeout=timeout,
-            retry=retry
+            retry=retry, deferred_ttl=deferred_ttl
         )
 
         # If a _dependent_ job depends on any unfinished job, register all the
@@ -396,6 +399,7 @@ nd
         result_ttl = kwargs.pop('result_ttl', None)
         ttl = kwargs.pop('ttl', None)
         failure_ttl = kwargs.pop('failure_ttl', None)
+        deferred_ttl = kwargs.pop('deferred_ttl', None)
         depends_on = kwargs.pop('depends_on', None)
         job_id = kwargs.pop('job_id', None)
         at_front = kwargs.pop('at_front', False)
@@ -407,31 +411,32 @@ nd
             args = kwargs.pop('args', None)
             kwargs = kwargs.pop('kwargs', None)
 
-        return (f, timeout, description, result_ttl, ttl, failure_ttl,
+        return (f, timeout, description, result_ttl, ttl, failure_ttl, deferred_ttl,
                 depends_on, job_id, at_front, meta, retry, args, kwargs)
 
     def enqueue(self, f, *args, **kwargs):
         """Creates a job to represent the delayed function call and enqueues it."""
 
-        (f, timeout, description, result_ttl, ttl, failure_ttl,
+        (f, timeout, description, result_ttl, ttl, failure_ttl, deferred_ttl,
          depends_on, job_id, at_front, meta, retry, args, kwargs) = Queue.parse_args(f, *args, **kwargs)
 
         return self.enqueue_call(
             func=f, args=args, kwargs=kwargs, timeout=timeout,
             result_ttl=result_ttl, ttl=ttl, failure_ttl=failure_ttl,
             description=description, depends_on=depends_on, job_id=job_id,
-            at_front=at_front, meta=meta, retry=retry
+            at_front=at_front, meta=meta, retry=retry, deferred_ttl=deferred_ttl
         )
 
     def enqueue_at(self, datetime, f, *args, **kwargs):
         """Schedules a job to be enqueued at specified time"""
 
-        (f, timeout, description, result_ttl, ttl, failure_ttl,
+        (f, timeout, description, result_ttl, ttl, failure_ttl, deferred_ttl,
          depends_on, job_id, at_front, meta, retry, args, kwargs) = Queue.parse_args(f, *args, **kwargs)
         job = self.create_job(f, status=JobStatus.SCHEDULED, args=args, kwargs=kwargs,
                               timeout=timeout, result_ttl=result_ttl, ttl=ttl,
                               failure_ttl=failure_ttl, description=description,
-                              depends_on=depends_on, job_id=job_id, meta=meta, retry=retry)
+                              depends_on=depends_on, job_id=job_id, meta=meta,
+                              retry=retry, deferred_ttl=deferred_ttl)
 
         return self.schedule_job(job, datetime)
 
