@@ -257,11 +257,9 @@ class DeferredJobRegistry(BaseRegistry):
             failed_job_registry = FailedJobRegistry(self.name, self.connection)
 
             with self.connection.pipeline() as pipeline:
-                for job_id in job_ids:
-                    try:
-                        job = self.job_class.fetch(job_id,
-                                                   connection=self.connection)
-                    except NoSuchJobError:
+                jobs = self.job_class.fetch_many(job_ids, connection=self.connection)
+                for job in jobs:
+                    if job is None:
                         continue
 
                     job.set_status(JobStatus.FAILED)
