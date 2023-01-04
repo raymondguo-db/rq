@@ -871,7 +871,7 @@ class Job(object):
 
         if pipeline is not None:
             connection.watch(*[self.key_for(dependency_id)
-                               for dependency_id in self._dependency_ids])
+                               for dependency_id in self._dependency_ids if dependency_id != exclude_job_id])
 
         dependencies_ids = {_id.decode()
                             for _id in connection.smembers(self.dependencies_key)}
