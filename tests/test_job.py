@@ -895,6 +895,22 @@ class TestJob(RQTestCase):
 
         self.assertTrue(dependencies_finished)
 
+    def test_dependencies_finished_returns_true_if_only_dependency(self):
+        dependency_job = Job.create(fixtures.say_hello)
+        dependent_job = Job.create(func=fixtures.say_hello)
+        dependent_job._dependency_ids = [dependency_job.id]
+        dependent_job.register_dependency()
+
+        now = utcnow()
+
+        # Set ended_at timestamps
+        dependency_job._status = JobStatus.FINISHED
+        dependency_job.ended_at = now - timedelta(seconds=1)
+        dependency_job.save()
+
+        dependencies_finished = dependent_job.dependencies_are_met(exclude_job_id=dependency_job.id, pipeline=self.testconn)
+        self.assertTrue(dependencies_finished)
+
     def test_dependencies_finished_returns_true_if_all_dependencies_finished(self):
         dependency_jobs = [
             Job.create(fixtures.say_hello)
